@@ -1,0 +1,78 @@
+name: GitHub Classroom Workflow
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - master
+jobs:
+  build:
+    name: Autograding
+    runs-on: self-hosted
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v2
+        with:
+          node-version: ${{ matrix.node-version }}
+
+      # Install app dependencies
+      - name: Install dependencies
+        run: npm ci
+
+      # Unit Test
+      - name: Unit test
+        run: npm test
+
+      # Deploy
+      - name: Deploy
+        uses: akhileshns/heroku-deploy@v3.12.12
+        with:
+          heroku_api_key: ${{secrets.HEROKU_API_KEY}}
+          heroku_app_name: rsoi-person-service-ztsugumi
+          heroku_email: phieudieuhai@gmail.com
+          usedocker: true
+
+      # API e2e test
+      - name: Run API Tests
+        id: run-newman
+        uses: anthonyvscode/newman-action@v1
+        with:
+          collection: postman/[inst] Lab1.postman_collection.json
+          environment: postman/[inst][heroku] Lab1.postman_environment.json
+          delayRequest: 50
+          reporters: cli
+
+      - uses: education/autograding@v1
+        id: autograder
+        continue-on-error: true
+
+      - name: badges branch and make dir
+        run: |
+          git checkout badges 2>/dev/null || git checkout -b badges
+          mkdir -p .github/badges
+
+      - name: points badge
+        uses: emibcn/badge-action@v1
+        with:
+          LABEL: 'Points'
+          STATUS: ${{ steps.autograder.outputs.Points }}
+          COLOR: cyan
+          path: '.github/badges/points.svg'
+
+      - name: Commit badge
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add '.github/badges/points.svg'
+          git diff-index --quiet HEAD || git commit -m "Add/Update badge"
+
+      - name: Push badge commit
+        uses: ad-m/github-push-action@master
+        if: success()
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          branch: badges

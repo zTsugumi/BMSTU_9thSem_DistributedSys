@@ -1,0 +1,32 @@
+version: '3'
+services:
+  api:
+    build:
+      dockerfile: Dockerfile
+      context: .
+    environment:
+      APP_NAME: person-service
+      APP_ENV: ${APP_ENV}
+      APP_HOST: ${APP_HOST}
+      PORT: ${APP_PORT}
+      DATABASE_URL: postgres://${DB_USERNAME}:${DB_PASSWORD}@postgres:${DB_PORT}/${DB}
+    volumes:
+      - .:/person-service/app
+      - /person-service/app/node_modules
+    ports:
+      - ${APP_PORT}:${APP_PORT} # api port
+      - 9229:9229 # debug port
+    command: npm run start:dev
+  postgres_admin:
+    image: dpage/pgadmin4:latest
+    container_name: postgres-admin
+    environment:
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_EMAIL}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD}
+    ports:
+      - 5050:80
+    depends_on:
+      - postgres
+
+volumes:
+  db-data:
