@@ -1,0 +1,14 @@
+{
+  "tests": [
+    {
+      "name": "Run Postman",
+      "setup": "",
+      "run": "newman run -e v2/postman/[rsoi][heroku]\\ postman_environment.json v2/postman/[rsoi]\\ postman_collection.json",
+      "input": "",
+      "output": "",
+      "comparison": "included",
+      "timeout": 10,
+      "points": 10
+    }
+  ]
+}

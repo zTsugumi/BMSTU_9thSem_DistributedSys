@@ -1,0 +1,60 @@
+version: "3"
+services:
+  service-gateway:
+    image: service-gateway:latest
+    container_name: service-gateway
+    restart: on-failure
+    build: ./service-gateway
+    env_file:
+      - ./service-gateway/.env
+    ports:
+      - ${PORT_GATEWAY}:${PORT_GATEWAY}
+    volumes:
+      - ./service-gateway:/service-gateway/app
+      - /service-gateway/app/node_modules
+    depends_on:
+      - service-reservation
+      - service-loyalty
+      - service-payment
+    command: npm run start:dev
+  service-loyalty:
+    image: service-loyalty:latest
+    container_name: service-loyalty
+    restart: on-failure
+    build: ./service-loyalty
+    env_file:
+      - ./service-loyalty/.env
+    volumes:
+      - ./service-loyalty:/service-loyalty/app
+      - /service-loyalty/app/node_modules
+    depends_on:
+      - postgres
+    command: npm run start:dev
+  service-payment:
+    image: service-payment:latest
+    container_name: service-payment
+    restart: on-failure
+    build: ./service-payment
+    env_file:
+      - ./service-payment/.env
+    volumes:
+      - ./service-payment:/service-payment/app
+      - /service-payment/app/node_modules
+    depends_on:
+      - postgres
+    command: npm run start:dev
+  service-reservation:
+    image: service-reservation:latest
+    container_name: service-reservation
+    restart: on-failure
+    build: ./service-reservation
+    env_file:
+      - ./service-reservation/.env
+    volumes:
+      - ./service-reservation:/service-reservation/app
+      - /service-reservation/app/node_modules
+    depends_on:
+      - postgres
+    command: npm run start:dev
+volumes:
+  db-data:

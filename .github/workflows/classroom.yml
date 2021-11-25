@@ -1,0 +1,134 @@
+name: GitHub Classroom Workflow
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - master
+jobs:
+  deploy-gateway:
+    name: Deploy gateway
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+
+      # Deploy
+      - name: Deploy
+        uses: gonuit/heroku-docker-deploy@v1.3.3
+        with:
+          email: ${{secrets.HEROKU_EMAIL}}
+          heroku_api_key: ${{secrets.HEROKU_API_KEY}}
+          heroku_app_name: rsoi-hotelbooking-gateway
+          dockerfile_directory: ./service-gateway
+  deploy-loyalty:
+    name: Deploy loyalty
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v2
+        with:
+          node-version: "14"
+
+      # Install app dependencies
+      - name: Install dependencies
+        run: npm ci
+        working-directory: ./service-loyalty
+
+      # Unit Test
+      - name: Unit test
+        run: npm test
+        working-directory: ./service-loyalty
+
+      # Deploy
+      - name: Deploy
+        uses: gonuit/heroku-docker-deploy@v1.3.3
+        with:
+          email: ${{secrets.HEROKU_EMAIL}}
+          heroku_api_key: ${{secrets.HEROKU_API_KEY}}
+          heroku_app_name: rsoi-hotelbooking-loyalty
+          dockerfile_directory: ./service-loyalty
+  deploy-payment:
+    name: Deploy payment
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v2
+        with:
+          node-version: "14"
+
+      # Install app dependencies
+      - name: Install dependencies
+        run: npm ci
+        working-directory: ./service-payment
+
+      # Unit Test
+      - name: Unit test
+        run: npm test
+        working-directory: ./service-payment
+
+      # Deploy
+      - name: Deploy
+        uses: gonuit/heroku-docker-deploy@v1.3.3
+        with:
+          email: ${{secrets.HEROKU_EMAIL}}
+          heroku_api_key: ${{secrets.HEROKU_API_KEY}}
+          heroku_app_name: rsoi-hotelbooking-payment
+          dockerfile_directory: ./service-payment
+  deploy-reservation:
+    name: Deploy reservation
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v2
+        with:
+          node-version: "14"
+
+      # Install app dependencies
+      - name: Install dependencies
+        run: npm ci
+        working-directory: ./service-reservation
+
+      # Unit Test
+      - name: Unit test
+        run: npm test
+        working-directory: ./service-reservation
+
+      # Deploy
+      - name: Deploy
+        uses: gonuit/heroku-docker-deploy@v1.3.3
+        with:
+          email: ${{secrets.HEROKU_EMAIL}}
+          heroku_api_key: ${{secrets.HEROKU_API_KEY}}
+          heroku_app_name: rsoi-hotelbooking-reservation
+          dockerfile_directory: ./service-reservation
+  autograding:
+    name: Autograding
+    needs: [deploy-gateway, deploy-loyalty, deploy-payment, deploy-reservation]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+
+      # API e2e test
+      - name: Run API Tests
+        id: run-newman
+        uses: anthonyvscode/newman-action@v1
+        with:
+          collection: v2/postman/[rsoi] postman_collection.json
+          environment: v2/postman/[rsoi][heroku] postman_environment.json
+          delayRequest: 50
+          reporters: cli
+
+      - uses: education/autograding@v1
+        id: autograder
+        continue-on-error: true
