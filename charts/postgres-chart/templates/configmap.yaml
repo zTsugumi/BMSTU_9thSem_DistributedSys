@@ -1,0 +1,21 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Chart.Name }}-configmap
+data:
+  create-user-and-db.sql: |
+    CREATE DATABASE {{ .Values.database.main.name }};
+    CREATE ROLE {{ .Values.database.main.user }} WITH PASSWORD '{{ .Values.database.main.password }}';
+    GRANT ALL PRIVILEGES ON DATABASE {{ .Values.database.main.name }} TO {{ .Values.database.main.user }};
+    ALTER ROLE {{ .Values.database.main.user }} WITH LOGIN;
+    \c {{ .Values.database.main.name }};
+    {{- range $key, $value := .Values.database.schemas }} 
+    CREATE SCHEMA IF NOT EXISTS {{ $value }};
+    {{- end }}
+
+# In order to test db, we can run a docker image on kube: 
+#   kubectl run -it --rm --image=postgres:12-alpine psql bash
+# Then connect to our postgres service
+#   psql -h <our_host_service> -U <user>
+# insert into reservations.hotel(id, hotel_uid, name, country, city, address, stars, price) values (1, '049161bb-badd-4fa8-9d90-87c9a82b0668', 'Ararat Park Hyatt Moscow', 'Россия', 'Москва', 'Неглинная ул., 4', 5, 10000);
+# insert into loyalties.loyalty(id, username, reservation_count, status, discount) values (1, 'Test Max', 25, 'GOLD', 10);

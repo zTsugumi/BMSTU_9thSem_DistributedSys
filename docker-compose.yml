@@ -1,0 +1,84 @@
+version: "3"
+services:
+  postgres:
+    image: library/postgres:13.4-alpine
+    container_name: postgres
+    restart: on-failure
+    environment:
+      POSTGRES_USER: ${DB_USERNAME}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB}
+    volumes:
+      - db-data:/var/lib/postgresql/data
+      - ./postgres/:/docker-entrypoint-initdb.d/
+    ports:
+      - ${DB_PORT}:${DB_PORT}
+    networks:
+      - db-network
+
+  service-gateway:
+    image: ztsugumi/service-gateway:v1.0
+    container_name: service-gateway
+    restart: on-failure
+    build: ./service-gateway
+    env_file:
+      - ./service-gateway/.env
+    ports:
+      - ${PORT_GATEWAY}:${PORT_GATEWAY}
+    depends_on:
+      - service-reservation
+      - service-loyalty
+      - service-payment
+    networks:
+      - db-network
+      - service-network
+
+  service-loyalty:
+    image: ztsugumi/service-loyalty:v1.0
+    container_name: service-loyalty
+    restart: on-failure
+    build: ./service-loyalty
+    env_file:
+      - ./service-loyalty/.env
+    depends_on:
+      - postgres
+    networks:
+      - db-network
+      - service-network
+
+  service-payment:
+    image: ztsugumi/service-payment:v1.0
+    container_name: service-payment
+    restart: on-failure
+    build: ./service-payment
+    env_file:
+      - ./service-payment/.env
+    depends_on:
+      - postgres
+    networks:
+      - db-network
+      - service-network
+
+  service-reservation:
+    image: ztsugumi/service-reservation:v1.0
+    container_name: service-reservation
+    restart: on-failure
+    build: ./service-reservation
+    env_file:
+      - ./service-reservation/.env
+    depends_on:
+      - postgres
+    networks:
+      - db-network
+      - service-network
+
+networks:
+  service-network:
+    name: service-network
+    driver: bridge
+  db-network:
+    name: db-network
+    driver: bridge
+
+volumes:
+  db-data:

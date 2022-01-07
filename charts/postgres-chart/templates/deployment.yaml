@@ -1,0 +1,42 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Chart.Name }}-deployment  
+spec:
+  replicas: {{ .Values.replicaCount }}  
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: {{ .Chart.Name }}
+      app.kubernetes.io/version: "{{ .Chart.Version }}"
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: {{ .Chart.Name }}
+        app.kubernetes.io/version: "{{ .Chart.Version }}"        
+    spec:      
+      containers:
+        - name: {{ .Chart.Name }}          
+          image: {{ .Values.image.name }}:{{ .Values.image.version }}.{{ .Values.image.minorversion }}          
+          env:
+            - name: POSTGRES_DB
+              value: {{ .Values.database.default.name }}
+            - name: POSTGRES_USER
+              value: {{ .Values.database.default.user }}
+            - name: POSTGRES_PASSWORD
+              value: "{{ .Values.database.default.password }}"
+          ports:
+            - name: postgres
+              containerPort: {{ .Values.port }}
+          volumeMounts:
+            - name: do-volume
+              mountPath: /var/lib/postgresql/data
+              subPath: {{ .Values.image.name }}:{{ .Values.image.version }}.{{ .Values.image.minorversion }}
+            - name: postgres-config-map
+              mountPath: /docker-entrypoint-initdb.d/
+      volumes:
+        - name: do-volume
+          persistentVolumeClaim:
+            claimName: {{ .Values.database.storage.name }}-pvc
+        - name: postgres-config-map
+          configMap:
+            name: {{ .Chart.Name }}-configmap

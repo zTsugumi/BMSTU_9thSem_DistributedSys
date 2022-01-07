@@ -1,0 +1,100 @@
+name: GitHub Classroom Workflow
+on:
+  push:
+    branches:
+      - master
+jobs:
+  build_push:
+    name: Build and Push to Docker Hub
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v1
+        with:
+          username: ${{ secrets.DOCKER_HUB_USERNAME }}
+          password: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v1
+
+      - name: Build and Push Gateway
+        uses: docker/build-push-action@v2
+        with:
+          context: ./service-gateway
+          push: true
+          tags: ${{ secrets.DOCKER_HUB_USERNAME }}/service-gateway:v1.0
+
+      - name: Build and Push Loyalty
+        uses: docker/build-push-action@v2
+        with:
+          context: ./service-loyalty
+          push: true
+          tags: ${{ secrets.DOCKER_HUB_USERNAME }}/service-loyalty:v1.0
+
+      - name: Build and Push Payment
+        uses: docker/build-push-action@v2
+        with:
+          context: ./service-payment
+          push: true
+          tags: ${{ secrets.DOCKER_HUB_USERNAME }}/service-payment:v1.0
+
+      - name: Build and Push Reservation
+        uses: docker/build-push-action@v2
+        with:
+          context: ./service-reservation
+          push: true
+          tags: ${{ secrets.DOCKER_HUB_USERNAME }}/service-reservation:v1.0
+
+  deploy:
+    name: Deploy to k8s
+    needs: [build_push]
+    runs-on: ubuntu-latest
+    env:
+      KUBECONFIG_FILE: ${{ secrets.KUBECONFIG }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Deploy postgres
+        uses: deliverybot/helm@v1
+        with:
+          token: ${{ github.token }}
+          namespace: default
+          release: postgres
+          chart: ./charts/postgres-chart
+          helm: helm3
+
+      - name: Deploy services
+        uses: deliverybot/helm@v1
+        with:
+          token: ${{ github.token }}
+          namespace: default
+          release: services
+          chart: ./charts/services-chart
+          helm: helm3
+
+  autograding:
+    name: Autograding
+    needs: [deploy]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+
+      # API e2e test
+      - name: Run API Tests
+        id: run-newman
+        uses: anthonyvscode/newman-action@v1
+        with:
+          collection: v2/postman/collection.json
+          environment: v2/postman/environment.json
+          delayRequest: 50
+          reporters: cli
+
+      - uses: education/autograding@v1
+        id: autograder
+        continue-on-error: true

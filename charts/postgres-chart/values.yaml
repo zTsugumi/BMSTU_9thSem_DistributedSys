@@ -1,0 +1,27 @@
+port: 5432
+
+replicaCount: 1
+
+image:
+  name: postgres
+  version: 13
+  minorversion: 4
+
+database:
+  default:
+    name: postgres
+    user: postgres
+    password: postgres
+  main:
+    name: services
+    user: program
+    password: test
+  storage:
+    name: do
+    accessMode: ReadWriteOnce
+    className: do-block-storage
+    size: 5Gi
+  schemas:
+    item0: payments
+    item1: reservations
+    item2: loyalties

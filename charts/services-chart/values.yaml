@@ -1,0 +1,77 @@
+service-gateway:
+  ingress:
+    enabled: true
+  replicaCount: 1
+  port:
+    container: 8080
+    external: 80
+  image:
+    name: ztsugumi/service-gateway
+    version: v1.0
+  environments:
+    APP_ENV: production
+    APP_NAME: service-gateway
+    APP_HOST: service-gateway
+    PORT: 8080
+
+    HTTP_TIMEOUT: 3000
+    HTTP_MAX_REDIRECTS: 3
+
+    URL_LOYALTY: http://service-loyalty.default.svc.cluster.local/api/v1/loyalty
+    URL_PAYMENTS: http://service-payment.default.svc.cluster.local/api/v1/payments
+    URL_HOTELS: http://service-reservation.default.svc.cluster.local/api/v1/hotels
+    URL_RESERVATIONS: http://service-reservation.default.svc.cluster.local/api/v1/reservations
+    URL_ME: http://service-reservation.default.svc.cluster.local/api/v1/me
+
+service-loyalty:
+  replicaCount: 1
+  port:
+    container: 8080
+    external: 80
+  image:
+    name: ztsugumi/service-loyalty
+    version: v1.0
+  environments:
+    APP_ENV: development
+    APP_NAME: service-loyalty
+    APP_HOST: service-loyalty
+    PORT: 8080
+
+    DATABASE_URL: postgres://postgres:postgres@postgres:5432/services
+
+service-payment:
+  replicaCount: 1
+  port:
+    container: 8080
+    external: 80
+  image:
+    name: ztsugumi/service-payment
+    version: v1.0
+  environments:
+    APP_ENV: development
+    APP_NAME: service-payment
+    APP_HOST: service-payment
+    PORT: 8080
+
+    DATABASE_URL: postgres://postgres:postgres@postgres:5432/services
+
+service-reservation:
+  replicaCount: 1
+  port:
+    container: 8080
+    external: 80
+  image:
+    name: ztsugumi/service-reservation
+    version: v1.0
+  environments:
+    APP_ENV: development
+    APP_NAME: service-reservation
+    APP_HOST: service-reservation
+    PORT: 8080
+
+    HTTP_TIMEOUT: 3000
+    HTTP_MAX_REDIRECTS: 3
+
+    DATABASE_URL: postgres://postgres:postgres@postgres:5432/services
+
+    URL_GATEWAY: http://service-gateway.default.svc.cluster.local/api/v1

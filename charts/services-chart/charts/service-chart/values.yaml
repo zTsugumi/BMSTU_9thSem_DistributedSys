@@ -1,0 +1,14 @@
+ingress:
+  enabled: false
+
+replicaCount:
+
+port:
+  container:
+  external:
+
+environments: {}
+
+image:
+  name:
+  version:

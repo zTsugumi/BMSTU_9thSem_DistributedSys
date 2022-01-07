@@ -1,0 +1,29 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Chart.Name }}-deployment
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: {{ .Chart.Name }}
+      app.kubernetes.io/version: "{{ .Chart.Version }}"
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: {{ .Chart.Name }}
+        app.kubernetes.io/version: "{{ .Chart.Version }}"
+    spec:
+      containers:
+        - name: {{ .Chart.Name }}
+          imagePullPolicy: Always
+          image: {{ .Values.image.name }}:{{ .Values.image.version }}
+          env:
+            {{- range $key, $value := .Values.environments }}
+            - name: {{ $key }}
+              value: {{ $value | quote }}
+            {{- end }}
+          ports:
+            - name: web
+              containerPort: {{ .Values.port.container }}
+              protocol: TCP
